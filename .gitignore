@@ -1,0 +1,8 @@
+# secrets and per-machine state
+credentials.json
+state.json
+scrub.log
+review.json
+survey.json
+__pycache__/
+*.bak.*
