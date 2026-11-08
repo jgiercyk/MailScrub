@@ -1,5 +1,5 @@
 # MailScrub rules. Managed by MailScrubGui; hand edits are fine too.
-# Patterns are Python regexes, case-insensitive.
+# Patterns are Python regexes, case-insensitive. Missing keys take the engine defaults.
 
 allow:
 - from: amazon\.com$
@@ -629,6 +629,10 @@ heuristics:
   quarantine_if_precedence_bulk: true
   quarantine_if_subscription_confirm: true
   quarantine_if_unsubscribe_link: true
+  weight_list_unsubscribe: 1
+  weight_precedence: 1
+  weight_list_id: 1
+  weight_subscription_confirm: 2
   unsubscribe_link_weight: 2
   min_score: 2
 language:
@@ -640,7 +644,10 @@ language:
 unsubscribe:
   enabled: true
 settings:
+  source_folder: INBOX
   quarantine_folder: Quarantine
+  trash_folder: Trash
+  delete_to_trash: true
   quarantine_retention_days: 14
   learn_from_restores: true
   dry_run: false

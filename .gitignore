@@ -1,8 +1,13 @@
 # secrets and per-machine state
 credentials.json
 state.json
+state.json.bak
+scan.lock
 scrub.log
+scrub.log.*
 review.json
 survey.json
+*.tmp
 __pycache__/
+.pytest_cache/
 *.bak.*
