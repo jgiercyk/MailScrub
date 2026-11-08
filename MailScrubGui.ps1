@@ -129,20 +129,32 @@ $tConn.Controls.AddRange(@($lbPassState, $btnTest, $btnSaveConn, $lbConnNote))
 
 # ===== Rules =====
 $tRules = New-Tab 'Rules'
-$lbAllow = New-Label 'ALLOW rules (win over block rules and heuristics; the language filter still runs first). from/subject are regexes; both must match when both given. not_bulk = only if no list headers.' 8 8 836
-$lbAllow.Anchor = $A_TLR
-$gAllow = New-Grid 8 30 836 200 @('from', 'subject', 'not_bulk')
-$lbBlock = New-Label 'BLOCK rules (quarantine on match). bulk_only = only when the message has list headers or unsubscribe wording, so support replies and shipping notices from that sender still get through.' 8 240 836
-$gBlock = New-Grid 8 262 836 200 @('from', 'subject', 'bulk_only', 'note')
-$gBlock.Anchor = $A_BLR
-$btnRulesSave = New-Button 'Save rules' 8 490 120 $A_BL
-$btnRulesReload = New-Button 'Reload' 136 490 100 $A_BL
-$tRules.Controls.AddRange(@($lbAllow, $gAllow, $lbBlock, $gBlock, $btnRulesSave, $btnRulesReload))
+# Docked layout: a button row on top, then a horizontal splitter with the two grids.
+# (Bottom-anchored controls on a TabPage are positioned against the page's pre-layout size and end up off-screen.)
+$rulesSplit = New-Object System.Windows.Forms.SplitContainer
+$rulesSplit.Dock = 'Fill'; $rulesSplit.Orientation = 'Horizontal'; $rulesSplit.SplitterWidth = 6
+$lbAllow = New-Object System.Windows.Forms.Label
+$lbAllow.Text = 'ALLOW rules: win over block rules and heuristics (the language filter still runs first). from/subject are regexes; both must match when both are given. not_bulk = only if no list headers.'
+$lbAllow.Dock = 'Top'; $lbAllow.Height = 34
+$gAllow = New-Grid 0 0 100 100 @('from', 'subject', 'not_bulk'); $gAllow.Dock = 'Fill'; $gAllow.Anchor = $A_TL
+$lbBlock = New-Object System.Windows.Forms.Label
+$lbBlock.Text = 'BLOCK rules: quarantine on match. bulk_only = only when the message has list headers or unsubscribe wording, so support replies and shipping notices from that sender still get through. note = free text.'
+$lbBlock.Dock = 'Top'; $lbBlock.Height = 34
+$gBlock = New-Grid 0 0 100 100 @('from', 'subject', 'bulk_only', 'note'); $gBlock.Dock = 'Fill'; $gBlock.Anchor = $A_TL
+$rulesSplit.Panel1.Controls.Add($gAllow); $rulesSplit.Panel1.Controls.Add($lbAllow)     # Fill first, Top second
+$rulesSplit.Panel2.Controls.Add($gBlock); $rulesSplit.Panel2.Controls.Add($lbBlock)
+$rulesBar = New-Object System.Windows.Forms.FlowLayoutPanel; $rulesBar.Dock = 'Top'; $rulesBar.Height = 36; $rulesBar.Padding = '0,0,0,4'
+$btnRulesSave = New-Button 'Save rules' 0 0 120; $btnRulesReload = New-Button 'Reload' 0 0 100
+$btnRulesSave.Anchor = $A_TL; $btnRulesReload.Anchor = $A_TL
+$rulesBar.Controls.AddRange(@($btnRulesSave, $btnRulesReload))
+$tRules.Controls.Add($rulesSplit); $tRules.Controls.Add($rulesBar)                       # Fill first, Top second
+$tRules.Add_Layout({ if ($rulesSplit.Height -gt 100 -and $rulesSplit.SplitterDistance -lt 50) { $rulesSplit.SplitterDistance = [int]($rulesSplit.Height * 0.45) } })
 
 # ===== Filters =====
 $tFilt = New-Tab 'Filters'
+$btnFiltSave = New-Button 'Save filters' 12 8 120
 $gbH = New-Object System.Windows.Forms.GroupBox; $gbH.Text = 'Heuristics (new list mail you have never seen). Each signal adds its weight; the message is quarantined when the total reaches the threshold.'
-$gbH.Location = '12,10'; $gbH.Size = '820,200'; $gbH.Anchor = $A_TLR
+$gbH.Location = '12,44'; $gbH.Size = '820,200'; $gbH.Anchor = $A_TLR
 $ckHEnabled  = New-Check 'Enable heuristics' 16 24
 $ckListUnsub = New-Check 'List-Unsubscribe header present' 16 48 300;  $nuWListUnsub = New-Num 330 48 0 10 0 60
 $ckPrecBulk  = New-Check 'Precedence: bulk / list / junk' 16 72 300;   $nuWPrec = New-Num 330 72 0 10 0 60
@@ -154,43 +166,42 @@ $lbMin = New-Label 'Quarantine when score reaches' 480 48 200; $nuMin = New-Num 
 $gbH.Controls.AddRange(@($ckHEnabled, $ckListUnsub, $nuWListUnsub, $ckPrecBulk, $nuWPrec, $lbListId, $nuWListId, $ckSubConf, $nuWSubConf, $ckUnsubLink, $nuUnsubW, $lbWeight, $lbMin, $nuMin))
 
 $gbL = New-Object System.Windows.Forms.GroupBox; $gbL.Text = 'Language'
-$gbL.Location = '12,220'; $gbL.Size = '820,120'; $gbL.Anchor = $A_TLR
+$gbL.Location = '12,254'; $gbL.Size = '820,120'; $gbL.Anchor = $A_TLR
 $ckLang = New-Check 'Enable language filter (runs before allow rules; learned allows still win)' 16 24 600
 $lbAllowed = New-Label 'Allowed languages (ISO codes, comma separated)' 16 52 280; $txLangs = New-Text 300 50 160 $A_TL
 $lbConf = New-Label 'Minimum confidence' 16 84 160; $nuConf = New-Num 180 82 0.5 1 2
 $lbAct = New-Label 'Action' 300 84 50
 $cbLangAct = New-Object System.Windows.Forms.ComboBox; $cbLangAct.Location = '350,82'; $cbLangAct.Size = '120,23'
 $cbLangAct.DropDownStyle = 'DropDownList'; [void]$cbLangAct.Items.AddRange(@('delete', 'quarantine'))
-$lbActNote = New-Label '"delete" moves to the Trash folder when one exists (see Settings).' 480 84 330
+$lbActNote = New-Label '"delete" = move to Trash (see Settings)' 480 84 330
 $gbL.Controls.AddRange(@($ckLang, $lbAllowed, $txLangs, $lbConf, $nuConf, $lbAct, $cbLangAct, $lbActNote))
 
 $gbU = New-Object System.Windows.Forms.GroupBox; $gbU.Text = 'Unsubscribe'
-$gbU.Location = '12,350'; $gbU.Size = '820,70'; $gbU.Anchor = $A_TLR
+$gbU.Location = '12,384'; $gbU.Size = '820,70'; $gbU.Anchor = $A_TLR
 $ckUnsub = New-Check 'Send RFC 8058 one-click unsubscribe for mail being removed (header-based only; body links are never clicked)' 16 24 780
 $gbU.Controls.Add($ckUnsub)
-$btnFiltSave = New-Button 'Save filters' 12 490 120 $A_BL
-$tFilt.Controls.AddRange(@($gbH, $gbL, $gbU, $btnFiltSave))
+$tFilt.Controls.AddRange(@($btnFiltSave, $gbH, $gbL, $gbU))
 
 # ===== Settings =====
 $tSet = New-Tab 'Settings'
-$lbSrc = New-Label 'Source folder' 16 24;        $txSrc = New-Text 180 22 240 $A_TL
-$lbQF  = New-Label 'Quarantine folder' 16 56;   $txQF  = New-Text 180 54 240 $A_TL
-$lbTr  = New-Label 'Trash folder' 16 88;        $txTr  = New-Text 180 86 240 $A_TL
-$ckTrash = New-Check 'Move "delete" verdicts to the Trash folder instead of deleting permanently' 440 86 400
-$lbRet = New-Label 'Quarantine retention (days)' 16 120 160; $nuRet = New-Num 180 118 1 365
-$ckLearn = New-Check 'Learn from restores: a message moved back from Quarantine to the source folder allow-lists its sender' 16 150 800
-$ckDry = New-Check 'DRY RUN - report only, never move or delete mail' 16 176 500
+$btnSetSave = New-Button 'Save settings' 12 8 120
+$lbSrc = New-Label 'Source folder' 16 54;        $txSrc = New-Text 180 52 240 $A_TL
+$lbQF  = New-Label 'Quarantine folder' 16 86;   $txQF  = New-Text 180 84 240 $A_TL
+$lbTr  = New-Label 'Trash folder' 16 118;       $txTr  = New-Text 180 116 240 $A_TL
+$ckTrash = New-Check '"delete" verdicts go to this Trash folder, not permanent deletion' 440 116 400
+$lbRet = New-Label 'Quarantine retention (days)' 16 150 160; $nuRet = New-Num 180 148 1 365
+$ckLearn = New-Check 'Learn from restores: a message moved back from Quarantine to the source folder allow-lists its sender' 16 180 800
+$ckDry = New-Check 'DRY RUN - report only, never move or delete mail' 16 206 500
 $ckDry.ForeColor = 'DarkRed'
-$ckRescan = New-Check 'Always re-scan messages previously judged keep (slow; rules changes already trigger this automatically)' 16 202 800
+$ckRescan = New-Check 'Always re-scan messages previously judged keep (slow; rules changes already trigger this automatically)' 16 232 800
 $gbTask = New-Object System.Windows.Forms.GroupBox; $gbTask.Text = 'Windows Scheduled Tasks (the task is the source of truth; this panel shows its live state)'
-$gbTask.Location = '12,240'; $gbTask.Size = '820,110'; $gbTask.Anchor = $A_TLR
+$gbTask.Location = '12,270'; $gbTask.Size = '820,110'; $gbTask.Anchor = $A_TLR
 $lbEvery = New-Label 'Scan every (minutes, used by Install)' 16 28 230; $nuEvery = New-Num 250 26 5 1440
 $btnTaskInstall = New-Button 'Install / update tasks' 16 62 160
 $btnTaskRemove = New-Button 'Remove tasks' 186 62 120
 $lbTaskState = New-Label '' 320 28 480; $lbTaskState.Size = '480,70'; $lbTaskState.Anchor = $A_TLR
 $gbTask.Controls.AddRange(@($lbEvery, $nuEvery, $btnTaskInstall, $btnTaskRemove, $lbTaskState))
-$btnSetSave = New-Button 'Save settings' 12 490 120 $A_BL
-$tSet.Controls.AddRange(@($lbSrc, $txSrc, $lbQF, $txQF, $lbTr, $txTr, $ckTrash, $lbRet, $nuRet, $ckLearn, $ckDry, $ckRescan, $gbTask, $btnSetSave))
+$tSet.Controls.AddRange(@($btnSetSave, $lbSrc, $txSrc, $lbQF, $txQF, $lbTr, $txTr, $ckTrash, $lbRet, $nuRet, $ckLearn, $ckDry, $ckRescan, $gbTask))
 
 # ===== Run =====
 $tRun = New-Tab 'Run'

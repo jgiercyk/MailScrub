@@ -100,6 +100,12 @@ Learn-from-restore: a message we quarantined that reappears in the source folder
   `Collect-Config` must list every settings key; a key the GUI lacks reverts to the engine default on save.
   Test: load, Save, compare `deep_merge(DEFAULTS, before)` with `after`.
 - Never save silently. Scan/Purge/Install call `Confirm-SavedBeforeRun`, which asks when `Test-Dirty`.
+- Never anchor a control to Bottom inside a TabPage. The anchor is computed against the page's
+  pre-layout default size and the control lands off-screen (Save buttons and the block grid did).
+  Use Dock (FlowLayoutPanel on top, SplitContainer/Fill below) as the Rules tab does. Bottom anchors
+  on a Form whose Size is set before controls are added (the Review dialog) are fine.
+- Visual check: render each tab with `DrawToBitmap` in the headless harness and look at the PNGs.
+  The control-count probe alone did not catch the missing buttons.
 - `$Args` is a PowerShell automatic variable. Never name a parameter `$Args`.
 - WinForms `Columns.AddRange` rejects PowerShell arrays; add columns one at a time.
 - `ConvertFrom-Json` turns ISO timestamps into `[datetime]`; cast before string methods.
