@@ -216,6 +216,7 @@ $btnClear  = New-Button 'Clear' 776 8 60
 $txOut = New-Object System.Windows.Forms.TextBox
 $txOut.Location = '8,44'; $txOut.Size = '836,480'; $txOut.Anchor = $A_ALL
 $txOut.Multiline = $true; $txOut.ScrollBars = 'Both'; $txOut.ReadOnly = $true
+$txOut.MaxLength = 0   # unlimited; the default 32767 silently truncated long scan output and log tails
 $txOut.Font = New-Object System.Drawing.Font('Consolas', 9); $txOut.WordWrap = $false
 $tRun.Controls.AddRange(@($btnSurvey, $btnScan, $btnDigest, $btnPurge, $btnReview, $btnLog, $btnClear, $txOut))
 
